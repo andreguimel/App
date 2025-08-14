@@ -33,17 +33,17 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-white flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-white flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="bg-white rounded-lg shadow-lg p-8">
           {/* Header */}
           <div className="text-center mb-8">
             <div className="flex items-center justify-center mb-4">
               <div className="bg-orange-500 rounded-lg p-3">
-                <span className="text-white font-bold text-2xl">M</span>
+                <span className="text-white font-bold text-2xl">MD</span>
               </div>
             </div>
-            <h1 className="text-2xl font-bold text-gray-800">Mordomo</h1>
+            <h1 className="text-2xl font-bold text-gray-800">Meu Dinheiro</h1>
             <p className="text-gray-600 mt-2">
               {mode === "login" && "Faça login em sua conta"}
               {mode === "register" && "Crie sua conta"}

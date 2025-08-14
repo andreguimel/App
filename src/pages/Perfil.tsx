@@ -1,5 +1,3 @@
-
-
 import { useState, useRef, useEffect } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,12 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { User, Mail, Phone, MapPin, Calendar, Camera, Lock, Trash2 } from "lucide-react";
+import { User, Mail, Phone, MapPin, Calendar, Camera, Lock, UserPlus, Trash2, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { ChangePasswordModal } from "@/components/auth/ChangePasswordModal";
 import { DeleteAccountModal } from "@/components/auth/DeleteAccountModal";
+import { AddSharedUserModal } from '@/components/modals/AddSharedUserModal';
+import { supabase } from '@/lib/supabase';
 
 const Perfil = () => {
   const { toast } = useToast();
@@ -22,6 +22,88 @@ const Perfil = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
+  const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
+  const [sharedUsers, setSharedUsers] = useState<{ id: any; name: string; whatsapp: string; }[]>([]);
+
+  useEffect(() => {
+    const fetchSharedUsers = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data, error } = await supabase
+          .from('shared_access')
+          .select('id, shared_user_name, shared_user_whatsapp')
+          .eq('owner_user_id', user.id);
+
+        if (error) {
+          toast({ title: "Erro ao buscar usuários compartilhados", description: error.message, variant: "destructive" });
+        } else if (data) {
+          setSharedUsers(data.map(u => ({ id: u.id, name: u.shared_user_name, whatsapp: u.shared_user_whatsapp })));
+        }
+      }
+    };
+
+    fetchSharedUsers();
+  }, [toast]);
+
+  const handleAddSharedUser = async (name: string, whatsapp: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+  
+    if (!profile || !profile.telefone) {
+      toast({ 
+        title: "Erro de Perfil", 
+        description: "Seu número de telefone não foi carregado. Por favor, atualize a página e tente novamente.", 
+        variant: "destructive" 
+      });
+      return;
+    }
+  
+    const { data, error } = await supabase
+      .from('shared_access')
+      .insert([{ 
+        user_id: user.id,  // This was the missing field
+        owner_user_id: user.id, 
+        owner_user_phone: profile.telefone, 
+        shared_user_name: name, 
+        shared_user_whatsapp: whatsapp,
+        created_at: new Date().toISOString()
+      }])
+      .select('id')
+      .single();
+  
+    if (error) {
+      console.error('Error details:', error);
+      toast({ 
+        title: "Erro ao adicionar usuário", 
+        description: error.message, 
+        variant: "destructive" 
+      });
+    } else if (data) {
+      setSharedUsers(prev => [...prev, { 
+        id: data.id, 
+        name, 
+        whatsapp 
+      }]);
+      toast({ 
+        title: "Sucesso", 
+        description: "Usuário compartilhado adicionado com sucesso!" 
+      });
+    }
+  };
+
+  const handleRemoveSharedUser = async (userIdToRemove: any) => {
+    const { error } = await supabase
+      .from('shared_access')
+      .delete()
+      .eq('id', userIdToRemove);
+
+    if (error) {
+      toast({ title: "Erro ao remover acesso", description: error.message, variant: "destructive" });
+    } else {
+      setSharedUsers(sharedUsers.filter(user => user.id !== userIdToRemove));
+      toast({ title: "Acesso removido!", description: `O usuário foi removido da lista de compartilhamento.` });
+    }
+  };
   const [formData, setFormData] = useState({
     nome: "",
     email: "",
@@ -143,7 +225,7 @@ const Perfil = () => {
       <DashboardLayout>
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-orange-500"></div>
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-green-500"></div>
             <p className="mt-4 text-muted-foreground">Carregando perfil...</p>
           </div>
         </div>
@@ -209,7 +291,7 @@ const Perfil = () => {
           <Card className="lg:col-span-2">
             <CardHeader>
               <CardTitle className="flex items-center">
-                <Lock className="w-5 h-5 mr-2 text-orange-500" />
+                <Lock className="w-5 h-5 mr-2 text-green-500" />
                 Segurança
               </CardTitle>
             </CardHeader>
@@ -238,7 +320,7 @@ const Perfil = () => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="flex items-center">
-              <User className="w-5 h-5 mr-2 text-orange-500" />
+              <User className="w-5 h-5 mr-2 text-green-500" />
               Informações Pessoais
             </CardTitle>
             {!isEditing ? (
@@ -252,7 +334,7 @@ const Perfil = () => {
               <div className="flex space-x-2">
                 <Button
                   onClick={handleSave}
-                  className="bg-orange-500 hover:bg-orange-600"
+                  className="bg-green-500 hover:bg-green-600"
                 >
                   Salvar
                 </Button>
@@ -307,6 +389,34 @@ const Perfil = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Compartilhar Acesso */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="flex items-center">
+              <UserPlus className="w-5 h-5 mr-2 text-green-500" />
+              Compartilhar Acesso
+            </CardTitle>
+            <Button onClick={() => setIsAddUserModalOpen(true)}>Adicionar</Button>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-gray-600 mb-4">Adicione usuários para compartilhar o acesso a esta conta. Eles poderão registrar e visualizar os dados.</p>
+            <div className="space-y-2">
+              {sharedUsers.map((user) => (
+                <div key={user.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-md">
+                  <div>
+                    <p className="font-medium">{user.name}</p>
+                    <p className="text-sm text-gray-500">{user.whatsapp}</p>
+                  </div>
+                  <Button variant="ghost" size="icon" onClick={() => handleRemoveSharedUser(user.id)}>
+                    <X className="h-4 w-4 text-red-500" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
       </div>
 
       {/* Modais */}
@@ -319,9 +429,13 @@ const Perfil = () => {
         isOpen={showDeleteAccountModal}
         onClose={() => setShowDeleteAccountModal(false)}
       />
+      <AddSharedUserModal
+        isOpen={isAddUserModalOpen}
+        onClose={() => setIsAddUserModalOpen(false)}
+        onAddUser={handleAddSharedUser}
+      />
     </DashboardLayout>
   );
 };
 
 export default Perfil;
-

@@ -112,10 +112,10 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="bg-orange-500 rounded-lg p-2">
-                <span className="text-white font-bold text-xl">M</span>
+                <span className="text-white font-bold text-xl">MD</span>
               </div>
               {!isCollapsed && (
-                <span className="text-xl font-bold text-gray-800">Mordomo</span>
+                <span className="text-xl font-bold text-gray-800">Meu Dinheiro</span>
               )}
             </div>
 
