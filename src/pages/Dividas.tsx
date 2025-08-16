@@ -37,33 +37,15 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useCategorias } from "@/hooks/useCategorias";
-import { useDividas } from "@/hooks/useDividas";
+import { useDividas, Divida as DividaType } from "@/hooks/useDividas";
 import { EditarDividaModal } from "@/components/EditarDividaModal";
-
-interface Divida {
-  id: string;
-  descricao: string;
-  valor_total: number;
-  valor_pago: number;
-  valor_restante: number;
-  data_vencimento: string;
-  parcelas: number;
-  parcelas_pagas: number;
-  status: "pendente" | "vencida" | "quitada";
-  categoria_id?: string;
-  credor: string;
-  categorias?: {
-    id: string;
-    nome: string;
-  };
-}
 
 const Dividas = () => {
   const { toast } = useToast();
   const { categoriasDespesa } = useCategorias();
   const { dividas, createDivida, updateDivida, deleteDivida } = useDividas();
   const [activeTab, setActiveTab] = useState("lista");
-  const [dividaEditando, setDividaEditando] = useState<Divida | null>(null);
+  const [dividaEditando, setDividaEditando] = useState<DividaType | null>(null);
   const [modalEditarAberto, setModalEditarAberto] = useState(false);
 
   const [filtro, setFiltro] = useState("");
@@ -180,9 +162,9 @@ const Dividas = () => {
     }
   };
 
-  const handleSalvarEdicao = async (dividaEditada: Divida) => {
+  const handleSalvarEdicao = async (dividaEditada: DividaType) => {
     const categoria = categoriasDespesa.find(
-      (c) => c.nome === dividaEditada.categoria
+      (c) => c.nome === dividaEditada.categorias?.nome
     );
 
     await updateDivida(dividaEditada.id, {
